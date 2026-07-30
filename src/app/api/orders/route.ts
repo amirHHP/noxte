@@ -40,6 +40,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ order }, { status: 201 });
   } catch (error) {
     console.error("Create order error:", error);
-    return NextResponse.json({ error: "خطا در ثبت سفارش" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: process.env.VERCEL
+          ? "ثبت سفارش روی این هاست موقتی است و ممکن است پایدار نباشد. لطفاً بعداً دوباره تلاش کنید."
+          : "خطا در ثبت سفارش",
+      },
+      { status: 500 }
+    );
   }
 }

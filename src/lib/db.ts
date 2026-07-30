@@ -2,28 +2,53 @@ import { promises as fs } from "fs";
 import path from "path";
 import type { AISettings, Order, OrderStatus } from "./types";
 
-const DATA_DIR = path.join(process.cwd(), "data");
 const ORDERS_FILE = "orders.json";
 const SETTINGS_FILE = "settings.json";
 
-async function ensureDataDir() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
+/** Vercel filesystem is read-only except /tmp */
+function getDataDir(): string {
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return path.join("/tmp", "noxte-data");
+  }
+  return path.join(process.cwd(), "data");
+}
+
+async function ensureDataDir(): Promise<boolean> {
+  try {
+    await fs.mkdir(getDataDir(), { recursive: true });
+    return true;
+  } catch (error) {
+    console.error("Failed to create data directory:", error);
+    return false;
+  }
 }
 
 async function readJson<T>(filename: string, fallback: T): Promise<T> {
-  await ensureDataDir();
-  const filepath = path.join(DATA_DIR, filename);
+  const filepath = path.join(getDataDir(), filename);
   try {
     const raw = await fs.readFile(filepath, "utf-8");
     return JSON.parse(raw) as T;
   } catch {
+    // Also try project data/ as read-only seed (local / build artifacts)
+    if (process.env.VERCEL) {
+      try {
+        const seed = path.join(process.cwd(), "data", filename);
+        const raw = await fs.readFile(seed, "utf-8");
+        return JSON.parse(raw) as T;
+      } catch {
+        /* ignore */
+      }
+    }
     return fallback;
   }
 }
 
 async function writeJson<T>(filename: string, data: T): Promise<void> {
-  await ensureDataDir();
-  const filepath = path.join(DATA_DIR, filename);
+  const ready = await ensureDataDir();
+  if (!ready) {
+    throw new Error("امکان ذخیره داده روی این سرور وجود ندارد");
+  }
+  const filepath = path.join(getDataDir(), filename);
   await fs.writeFile(filepath, JSON.stringify(data, null, 2), "utf-8");
 }
 
@@ -41,10 +66,16 @@ const DEFAULT_SETTINGS: AISettings = {
 };
 
 export async function getOrders(): Promise<Order[]> {
-  const orders = await readJson<Order[]>(ORDERS_FILE, []);
-  return orders.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  try {
+    const orders = await readJson<Order[]>(ORDERS_FILE, []);
+    return orders.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  } catch (error) {
+    console.error("getOrders failed:", error);
+    return [];
+  }
 }
 
 export async function getOrderById(id: string): Promise<Order | undefined> {
@@ -95,11 +126,18 @@ export async function deleteOrder(id: string): Promise<boolean> {
 }
 
 export async function getAISettings(): Promise<AISettings> {
-  return readJson<AISettings>(SETTINGS_FILE, DEFAULT_SETTINGS);
+  try {
+    return await readJson<AISettings>(SETTINGS_FILE, DEFAULT_SETTINGS);
+  } catch (error) {
+    console.error("getAISettings failed:", error);
+    return DEFAULT_SETTINGS;
+  }
 }
 
 export async function updateAISettings(
-  updates: Partial<Pick<AISettings, "openaiApiKey" | "openaiModel" | "useEnvFallback">>
+  updates: Partial<
+    Pick<AISettings, "openaiApiKey" | "openaiModel" | "useEnvFallback">
+  >
 ): Promise<AISettings> {
   const current = await getAISettings();
   const next: AISettings = {

@@ -14,8 +14,10 @@ function getAdminPassword(): string {
 
 export function verifyAdminPassword(password: string): boolean {
   const expected = getAdminPassword();
-  if (password.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(password), Buffer.from(expected));
+  const a = Buffer.from(password, "utf8");
+  const b = Buffer.from(expected, "utf8");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 export function createSessionToken(): string {

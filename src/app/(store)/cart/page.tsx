@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import {
@@ -9,29 +8,13 @@ import {
   formatPrice,
   getBulkDiscount,
 } from "@/lib/products";
-import { CheckoutForm, OrderSuccess } from "@/components/CheckoutForm";
+import { CheckoutForm } from "@/components/CheckoutForm";
+import { useState } from "react";
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, clearCart, totalPrice } =
     useCartStore();
   const [showCheckout, setShowCheckout] = useState(false);
-  const [orderId, setOrderId] = useState<string | null>(null);
-
-  if (orderId) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-12">
-        <OrderSuccess orderId={orderId} />
-        <div className="mt-6 text-center">
-          <Link
-            href="/shop"
-            className="text-sm font-medium text-gray-500 transition hover:text-gray-900"
-          >
-            ادامه خرید
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   if (items.length === 0) {
     return (
@@ -154,7 +137,7 @@ export default function CartPage() {
         ) : (
           <div className="mt-6 border-t border-gray-100 pt-6">
             <h2 className="mb-4 font-bold text-gray-900">اطلاعات سفارش</h2>
-            <CheckoutForm onSuccess={setOrderId} />
+            <CheckoutForm />
           </div>
         )}
 

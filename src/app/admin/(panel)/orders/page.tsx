@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Trash2, RefreshCw } from "lucide-react";
-import type { Order, OrderStatus } from "@/lib/types";
-import { ORDER_STATUS_LABELS } from "@/lib/types";
+import type { Order, OrderStatus, PaymentStatus } from "@/lib/types";
+import { ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/types";
 import { formatPrice } from "@/lib/products";
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
@@ -13,6 +13,12 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   shipped: "bg-purple-100 text-purple-700",
   delivered: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
+};
+
+const PAYMENT_STATUS_COLORS: Record<PaymentStatus, string> = {
+  pending: "bg-amber-50 text-amber-600 border border-amber-200",
+  paid: "bg-emerald-50 text-emerald-600 border border-emerald-200",
+  failed: "bg-red-50 text-red-600 border border-red-200",
 };
 
 const ALL_STATUSES = Object.keys(ORDER_STATUS_LABELS) as OrderStatus[];
@@ -150,6 +156,13 @@ export default function AdminOrdersPage() {
 
                 <div className="flex items-center gap-4">
                   <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      PAYMENT_STATUS_COLORS[order.paymentStatus || "pending"]
+                    }`}
+                  >
+                    {PAYMENT_STATUS_LABELS[order.paymentStatus || "pending"]}
+                  </span>
+                  <span
                     className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[order.status]}`}
                   >
                     {ORDER_STATUS_LABELS[order.status]}
@@ -165,7 +178,7 @@ export default function AdminOrdersPage() {
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
                     <div className="rounded-xl bg-gray-50 p-4 text-sm">
                       <p className="mb-2 font-medium text-gray-700">
-                        اطلاعات مشتری
+                        اطلاعات مشتری و پرداخت
                       </p>
                       <p>نام: {order.customerName}</p>
                       <p>ایمیل: {order.customerEmail}</p>
@@ -173,6 +186,16 @@ export default function AdminOrdersPage() {
                         <p>تلفن: {order.customerPhone}</p>
                       )}
                       {order.company && <p>شرکت: {order.company}</p>}
+                      {order.paymentRefId && (
+                        <p className="mt-1 font-mono text-xs font-bold text-emerald-700">
+                          کد پیگیری زرین‌پال: {order.paymentRefId}
+                        </p>
+                      )}
+                      {order.paymentCardPan && (
+                        <p className="font-mono text-xs text-gray-500">
+                          کارت: {order.paymentCardPan}
+                        </p>
+                      )}
                       {order.note && (
                         <p className="mt-2 text-gray-500">یادداشت: {order.note}</p>
                       )}

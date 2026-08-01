@@ -50,6 +50,8 @@ export type OrderStatus =
   | "delivered"
   | "cancelled";
 
+export type PaymentStatus = "pending" | "paid" | "failed";
+
 export interface OrderItem {
   productId: string;
   productName: string;
@@ -70,13 +72,32 @@ export interface Order {
   totalPrice: number;
   totalItems: number;
   status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentAuthority?: string;
+  paymentRefId?: string;
+  paymentCardPan?: string;
   createdAt: string;
   updatedAt: string;
 }
 
+export type AIProvider = "openai" | "gemini";
+
+export interface GeminiModelInfo {
+  name: string; // e.g. "models/gemini-2.5-flash"
+  id: string; // e.g. "gemini-2.5-flash"
+  displayName: string;
+  description: string;
+  inputTokenLimit: number;
+  outputTokenLimit: number;
+  supportedGenerationMethods: string[];
+}
+
 export interface AISettings {
+  provider: AIProvider;
   openaiApiKey: string;
   openaiModel: string;
+  geminiApiKey: string;
+  geminiModel: string;
   useEnvFallback: boolean;
   updatedAt: string;
 }
@@ -88,4 +109,10 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   shipped: "ارسال شده",
   delivered: "تحویل داده شده",
   cancelled: "لغو شده",
+};
+
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  pending: "در انتظار پرداخت",
+  paid: "پرداخت شده",
+  failed: "پرداخت ناموفق",
 };

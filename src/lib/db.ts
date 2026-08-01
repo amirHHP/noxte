@@ -59,8 +59,11 @@ function generateOrderId(): string {
 }
 
 const DEFAULT_SETTINGS: AISettings = {
+  provider: "gemini",
   openaiApiKey: "",
   openaiModel: "gpt-4o-mini",
+  geminiApiKey: "",
+  geminiModel: "gemini-2.5-flash",
   useEnvFallback: true,
   updatedAt: new Date().toISOString(),
 };
@@ -84,7 +87,7 @@ export async function getOrderById(id: string): Promise<Order | undefined> {
 }
 
 export async function createOrder(
-  data: Omit<Order, "id" | "status" | "createdAt" | "updatedAt">
+  data: Omit<Order, "id" | "status" | "paymentStatus" | "createdAt" | "updatedAt">
 ): Promise<Order> {
   const orders = await readJson<Order[]>(ORDERS_FILE, []);
   const now = new Date().toISOString();
@@ -92,6 +95,7 @@ export async function createOrder(
     ...data,
     id: generateOrderId(),
     status: "pending",
+    paymentStatus: "pending",
     createdAt: now,
     updatedAt: now,
   };
@@ -125,6 +129,51 @@ export async function deleteOrder(id: string): Promise<boolean> {
   return true;
 }
 
+export async function getOrderByAuthority(
+  authority: string
+): Promise<Order | undefined> {
+  const orders = await readJson<Order[]>(ORDERS_FILE, []);
+  return orders.find((o) => o.paymentAuthority === authority);
+}
+
+export async function updateOrderAuthority(
+  id: string,
+  authority: string
+): Promise<void> {
+  const orders = await readJson<Order[]>(ORDERS_FILE, []);
+  const index = orders.findIndex((o) => o.id === id);
+  if (index === -1) return;
+  orders[index] = {
+    ...orders[index],
+    paymentAuthority: authority,
+    updatedAt: new Date().toISOString(),
+  };
+  await writeJson(ORDERS_FILE, orders);
+}
+
+export async function updateOrderPayment(
+  id: string,
+  paymentData: {
+    paymentStatus: "paid" | "failed";
+    paymentRefId?: string;
+    paymentCardPan?: string;
+  }
+): Promise<Order | null> {
+  const orders = await readJson<Order[]>(ORDERS_FILE, []);
+  const index = orders.findIndex((o) => o.id === id);
+  if (index === -1) return null;
+
+  orders[index] = {
+    ...orders[index],
+    ...paymentData,
+    // Auto-confirm order on successful payment
+    status: paymentData.paymentStatus === "paid" ? "confirmed" : orders[index].status,
+    updatedAt: new Date().toISOString(),
+  };
+  await writeJson(ORDERS_FILE, orders);
+  return orders[index];
+}
+
 export async function getAISettings(): Promise<AISettings> {
   try {
     return await readJson<AISettings>(SETTINGS_FILE, DEFAULT_SETTINGS);
@@ -136,7 +185,15 @@ export async function getAISettings(): Promise<AISettings> {
 
 export async function updateAISettings(
   updates: Partial<
-    Pick<AISettings, "openaiApiKey" | "openaiModel" | "useEnvFallback">
+    Pick<
+      AISettings,
+      | "provider"
+      | "openaiApiKey"
+      | "openaiModel"
+      | "geminiApiKey"
+      | "geminiModel"
+      | "useEnvFallback"
+    >
   >
 ): Promise<AISettings> {
   const current = await getAISettings();
@@ -167,4 +224,18 @@ export async function getActiveOpenAIKey(): Promise<string | null> {
 export async function getActiveOpenAIModel(): Promise<string> {
   const settings = await getAISettings();
   return settings.openaiModel || "gpt-4o-mini";
+}
+
+export async function getActiveGeminiKey(): Promise<string | null> {
+  const settings = await getAISettings();
+  if (settings.geminiApiKey) return settings.geminiApiKey;
+  if (settings.useEnvFallback && process.env.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY;
+  }
+  return null;
+}
+
+export async function getActiveGeminiModel(): Promise<string> {
+  const settings = await getAISettings();
+  return settings.geminiModel || "gemini-2.5-flash";
 }

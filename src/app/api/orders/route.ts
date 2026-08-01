@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createOrder } from "@/lib/db";
+import { createOrder, updateOrderAuthority } from "@/lib/db";
+import { requestPayment } from "@/lib/zarinpal";
 import type { OrderItem } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 1. Create the order with pending payment status
     const order = await createOrder({
       customerName: body.customerName.trim(),
       customerEmail: body.customerEmail.trim(),
@@ -37,16 +39,35 @@ export async function POST(request: NextRequest) {
       totalItems: body.totalItems,
     });
 
-    return NextResponse.json({ order }, { status: 201 });
-  } catch (error) {
-    console.error("Create order error:", error);
+    // 2. Request payment from ZarinPal
+    const origin = request.nextUrl.origin;
+    const callbackUrl = `${origin}/api/payment/verify`;
+    const description = `سفارش ${order.id} — ${body.totalItems} بج مینیاتوری`;
+
+    const payment = await requestPayment(
+      body.totalPrice,
+      description,
+      callbackUrl,
+      {
+        email: body.customerEmail.trim(),
+        mobile: body.customerPhone?.trim(),
+      }
+    );
+
+    // 3. Save the authority code on the order
+    await updateOrderAuthority(order.id, payment.authority);
+
     return NextResponse.json(
       {
-        error: process.env.VERCEL
-          ? "ثبت سفارش روی این هاست موقتی است و ممکن است پایدار نباشد. لطفاً بعداً دوباره تلاش کنید."
-          : "خطا در ثبت سفارش",
+        order: { id: order.id },
+        paymentUrl: payment.paymentUrl,
       },
-      { status: 500 }
+      { status: 201 }
     );
+  } catch (error) {
+    console.error("Create order error:", error);
+    const message =
+      error instanceof Error ? error.message : "خطا در ثبت سفارش";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,19 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Loader2, CreditCard, ShieldCheck } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { calculatePrice } from "@/lib/products";
 import type { OrderItem } from "@/lib/types";
 
-interface CheckoutFormProps {
-  onSuccess: (orderId: string) => void;
-}
-
-export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
+export function CheckoutForm() {
   const { items, totalPrice, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [redirecting, setRedirecting] = useState(false);
   const [form, setForm] = useState({
     customerName: "",
     customerEmail: "",
@@ -56,17 +53,41 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
         return;
       }
 
+      // Clear cart and redirect to ZarinPal payment gateway
       clearCart();
-      onSuccess(data.order.id);
+      setRedirecting(true);
+
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      }
     } catch {
       setError("خطا در ارتباط با سرور");
     } finally {
-      setLoading(false);
+      if (!redirecting) {
+        setLoading(false);
+      }
     }
   };
 
   const update = (field: string, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
+
+  if (redirecting) {
+    return (
+      <div className="rounded-2xl border border-amber-100 bg-amber-50 p-8 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+          <CreditCard className="h-8 w-8 text-amber-600 animate-pulse" />
+        </div>
+        <h2 className="text-lg font-bold text-gray-900">
+          در حال انتقال به درگاه پرداخت...
+        </h2>
+        <p className="mt-2 text-sm text-gray-500">
+          لطفاً صفحه را نبندید
+        </p>
+        <Loader2 className="mx-auto mt-4 h-6 w-6 animate-spin text-amber-600" />
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -140,7 +161,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-gray-800 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-700 disabled:opacity-50"
       >
         {loading ? (
           <>
@@ -148,26 +169,17 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
             در حال ثبت...
           </>
         ) : (
-          "ثبت سفارش"
+          <>
+            <ShieldCheck className="h-5 w-5" />
+            پرداخت و ثبت سفارش
+          </>
         )}
       </button>
-    </form>
-  );
-}
 
-export function OrderSuccess({ orderId }: { orderId: string }) {
-  return (
-    <div className="rounded-2xl border border-green-100 bg-green-50 p-8 text-center">
-      <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
-      <h2 className="mt-4 text-xl font-bold text-gray-900">
-        سفارش شما ثبت شد!
-      </h2>
-      <p className="mt-2 text-sm text-gray-600">
-        شماره سفارش: <span className="font-mono font-bold">{orderId}</span>
-      </p>
-      <p className="mt-1 text-xs text-gray-400">
-        به زودی با شما تماس می‌گیریم
-      </p>
-    </div>
+      <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+        <ShieldCheck className="h-3.5 w-3.5" />
+        <span>پرداخت امن از طریق درگاه زرین‌پال</span>
+      </div>
+    </form>
   );
 }

@@ -30,13 +30,13 @@ export function BulkOrderPanel({ product }: BulkOrderPanelProps) {
   };
 
   return (
-    <div className="rounded-2xl border border-violet-100 bg-gradient-to-b from-violet-50/50 to-white p-6">
+    <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-6">
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-gray-700">تعداد</label>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white transition hover:bg-gray-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white transition hover:bg-gray-50"
           >
             <Minus className="h-4 w-4" />
           </button>
@@ -51,7 +51,7 @@ export function BulkOrderPanel({ product }: BulkOrderPanelProps) {
           />
           <button
             onClick={() => setQuantity(quantity + 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white transition hover:bg-gray-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white transition hover:bg-gray-50"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -66,7 +66,7 @@ export function BulkOrderPanel({ product }: BulkOrderPanelProps) {
 
       <div className="mt-4 flex items-baseline justify-between">
         <span className="text-sm text-gray-500">جمع کل</span>
-        <span className="text-2xl font-bold text-violet-700">
+        <span className="text-2xl font-bold text-gray-900">
           {formatPrice(total)}
         </span>
       </div>
@@ -76,14 +76,14 @@ export function BulkOrderPanel({ product }: BulkOrderPanelProps) {
         className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition ${
           added
             ? "bg-green-500"
-            : "bg-gradient-to-l from-violet-600 to-fuchsia-600 shadow-lg shadow-violet-200 hover:shadow-xl"
+            : "bg-gray-900 shadow-lg shadow-gray-200 hover:bg-gray-800 hover:shadow-xl"
         }`}
       >
         <ShoppingBag className="h-5 w-5" />
         {added ? "اضافه شد ✓" : "افزودن به سبد خرید"}
       </button>
 
-      <div className="mt-5 border-t border-violet-100 pt-4">
+      <div className="mt-5 border-t border-gray-200 pt-4">
         <p className="mb-2 text-xs font-medium text-gray-500">تعرفه خرید عمده</p>
         <div className="space-y-1">
           {BULK_TIERS.map((tier, i) => {
@@ -94,7 +94,7 @@ export function BulkOrderPanel({ product }: BulkOrderPanelProps) {
               key={tier.min}
               className={`flex justify-between rounded-lg px-2 py-1 text-xs ${
                 isActive
-                  ? "bg-violet-100 font-bold text-violet-700"
+                  ? "bg-gray-900 font-bold text-white"
                   : "text-gray-500"
               }`}
             >

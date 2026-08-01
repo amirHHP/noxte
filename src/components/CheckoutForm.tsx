@@ -79,7 +79,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
             required
             value={form.customerName}
             onChange={(e) => update("customerName", e.target.value)}
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-100"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
           />
         </div>
         <div>
@@ -91,7 +91,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
             type="email"
             value={form.customerEmail}
             onChange={(e) => update("customerEmail", e.target.value)}
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-100"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
             dir="ltr"
           />
         </div>
@@ -102,7 +102,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
           <input
             value={form.customerPhone}
             onChange={(e) => update("customerPhone", e.target.value)}
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-100"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
             dir="ltr"
           />
         </div>
@@ -113,7 +113,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
           <input
             value={form.company}
             onChange={(e) => update("company", e.target.value)}
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-100"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
           />
         </div>
       </div>
@@ -127,7 +127,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
           onChange={(e) => update("note", e.target.value)}
           rows={2}
           placeholder="مثلاً: برای تیم محصول، تحویل فوری"
-          className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-100"
+          className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
         />
       </div>
 
@@ -140,7 +140,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 py-3.5 text-sm font-bold text-white shadow-lg disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-gray-800 disabled:opacity-50"
       >
         {loading ? (
           <>

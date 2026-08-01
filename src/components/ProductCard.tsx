@@ -3,6 +3,8 @@ import type { Product } from "@/lib/types";
 import { formatPrice, getBulkDiscount } from "@/lib/products";
 import { TRAIT_LABELS } from "@/lib/traits";
 
+const DOT_COLORS = ["bg-noxte-red", "bg-noxte-blue", "bg-noxte-green", "bg-noxte-yellow", "bg-noxte-pink"];
+
 interface ProductCardProps {
   product: Product;
 }
@@ -13,8 +15,15 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
       href={`/shop/${product.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-violet-100"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white transition hover:-translate-y-1 hover:shadow-xl hover:shadow-gray-100"
     >
+      {/* Decorative dot */}
+      <div className="pointer-events-none absolute right-3 top-3 z-10" aria-hidden="true">
+        <div
+          className={`h-2.5 w-2.5 rounded-full opacity-60 transition-all group-hover:scale-150 group-hover:opacity-100 ${DOT_COLORS[Math.abs(product.id.charCodeAt(0)) % DOT_COLORS.length]}`}
+        />
+      </div>
+
       <div
         className="flex h-40 items-center justify-center text-6xl transition group-hover:scale-110"
         style={{ backgroundColor: product.color }}
@@ -45,7 +54,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
         <div className="mt-auto flex items-end justify-between pt-3">
           <div>
-            <p className="text-sm font-bold text-violet-700">
+            <p className="text-sm font-bold text-gray-900">
               {formatPrice(product.price)}
             </p>
             <p className="text-[10px] text-gray-400">

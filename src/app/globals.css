@@ -1,20 +1,103 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf9ff;
-  --foreground: #1a1a2e;
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+
+  /* Noxte brand colors — colorful dots */
+  --noxte-red: #E57373;
+  --noxte-blue: #5C8AE6;
+  --noxte-green: #4CAF50;
+  --noxte-yellow: #F5C842;
+  --noxte-pink: #E879A0;
+
+  /* Neutral tones */
+  --noxte-gray-50: #fafafa;
+  --noxte-gray-100: #f5f5f5;
+  --noxte-gray-200: #e5e5e5;
+  --noxte-gray-300: #d4d4d4;
+  --noxte-gray-400: #a3a3a3;
+  --noxte-gray-500: #737373;
+  --noxte-gray-600: #525252;
+  --noxte-gray-700: #404040;
+  --noxte-gray-800: #262626;
+  --noxte-gray-900: #0a0a0a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-vazirmatn);
+
+  --color-noxte-red: var(--noxte-red);
+  --color-noxte-blue: var(--noxte-blue);
+  --color-noxte-green: var(--noxte-green);
+  --color-noxte-yellow: var(--noxte-yellow);
+  --color-noxte-pink: var(--noxte-pink);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* Floating dot animations */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  25% { transform: translateY(-12px) translateX(6px); }
+  50% { transform: translateY(-6px) translateX(-8px); }
+  75% { transform: translateY(-18px) translateX(4px); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  33% { transform: translateY(-16px) translateX(-10px); }
+  66% { transform: translateY(-8px) translateX(12px); }
+}
+
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  50% { transform: translateY(-20px) translateX(-6px); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float-medium 6s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float-fast 4s ease-in-out infinite;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 3s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+/* Staggered animation delays */
+.delay-0 { animation-delay: 0s; }
+.delay-1 { animation-delay: 0.5s; }
+.delay-2 { animation-delay: 1s; }
+.delay-3 { animation-delay: 1.5s; }
+.delay-4 { animation-delay: 2s; }
+.delay-5 { animation-delay: 2.5s; }
+.delay-6 { animation-delay: 3s; }
 
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
@@ -24,4 +107,9 @@ input[type="number"]::-webkit-outer-spin-button {
 
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* Dot button hover glow */
+.dot-glow:hover {
+  box-shadow: 0 0 20px currentColor;
 }

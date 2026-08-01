@@ -59,9 +59,9 @@ export function AIAdvisor() {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-900 text-white">
             <Sparkles className="h-6 w-6" />
           </div>
           <div>
@@ -84,7 +84,7 @@ export function AIAdvisor() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="مثلاً: علی همیشه دیر می‌رسه ولی وقتی می‌رسه با شوخی فضا رو شاد می‌کنه. خیلی خلاقه و ایده‌های عجیب غریب داره..."
               rows={4}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm transition focus:border-violet-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm transition focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gray-100"
             />
           </div>
 
@@ -128,10 +128,10 @@ export function AIAdvisor() {
             ) : (
               <button
                 onClick={() => fileRef.current?.click()}
-                className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-violet-200 bg-violet-50/50 py-8 transition hover:border-violet-300 hover:bg-violet-50"
+                className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 py-8 transition hover:border-gray-300 hover:bg-gray-50"
               >
-                <Upload className="h-8 w-8 text-violet-400" />
-                <span className="text-sm text-violet-600">
+                <Upload className="h-8 w-8 text-gray-400" />
+                <span className="text-sm text-gray-600">
                   تصویر چت را اینجا بکشید یا کلیک کنید
                 </span>
                 <span className="text-xs text-gray-400">
@@ -144,7 +144,7 @@ export function AIAdvisor() {
           <button
             onClick={handleSubmit}
             disabled={loading || (!description && !imagePreview)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:shadow-xl disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3.5 text-sm font-bold text-white shadow-lg shadow-gray-200 transition hover:bg-gray-800 hover:shadow-xl disabled:opacity-50"
           >
             {loading ? (
               <>
@@ -180,7 +180,7 @@ export function AIAdvisor() {
                     key={trait}
                     className="rounded-full px-3 py-1 text-xs font-medium text-white"
                     style={{
-                      backgroundColor: TRAIT_LABELS[trait]?.color || "#8b5cf6",
+                      backgroundColor: TRAIT_LABELS[trait]?.color || "#0a0a0a",
                     }}
                   >
                     {TRAIT_LABELS[trait]?.emoji} {TRAIT_LABELS[trait]?.fa}

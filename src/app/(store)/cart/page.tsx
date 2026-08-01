@@ -24,7 +24,7 @@ export default function CartPage() {
         <div className="mt-6 text-center">
           <Link
             href="/shop"
-            className="text-sm font-medium text-violet-600 hover:text-violet-800"
+            className="text-sm font-medium text-gray-500 transition hover:text-gray-900"
           >
             ادامه خرید
           </Link>
@@ -45,7 +45,7 @@ export default function CartPage() {
         </p>
         <Link
           href="/shop"
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-3 text-sm font-bold text-white"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-gray-800"
         >
           رفتن به فروشگاه
           <ArrowRight className="h-4 w-4" />
@@ -86,7 +86,7 @@ export default function CartPage() {
               <div className="flex-1">
                 <Link
                   href={`/shop/${item.product.id}`}
-                  className="font-bold text-gray-900 hover:text-violet-600"
+                  className="font-bold text-gray-900 transition hover:text-gray-600"
                 >
                   {item.product.name}
                 </Link>
@@ -105,7 +105,7 @@ export default function CartPage() {
                   onClick={() =>
                     updateQuantity(item.product.id, item.quantity - 1)
                   }
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition hover:bg-gray-50"
                 >
                   <Minus className="h-3 w-3" />
                 </button>
@@ -114,14 +114,14 @@ export default function CartPage() {
                   onClick={() =>
                     updateQuantity(item.product.id, item.quantity + 1)
                   }
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition hover:bg-gray-50"
                 >
                   <Plus className="h-3 w-3" />
                 </button>
               </div>
 
               <div className="text-left">
-                <p className="font-bold text-violet-700">
+                <p className="font-bold text-gray-900">
                   {formatPrice(lineTotal)}
                 </p>
                 <button
@@ -136,10 +136,10 @@ export default function CartPage() {
         })}
       </div>
 
-      <div className="mt-8 rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+      <div className="mt-8 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between text-lg">
           <span className="font-medium text-gray-700">جمع کل</span>
-          <span className="text-2xl font-black text-violet-700">
+          <span className="text-2xl font-black text-gray-900">
             {formatPrice(totalPrice())}
           </span>
         </div>
@@ -147,12 +147,12 @@ export default function CartPage() {
         {!showCheckout ? (
           <button
             onClick={() => setShowCheckout(true)}
-            className="mt-4 w-full rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:shadow-xl"
+            className="mt-4 w-full rounded-xl bg-gray-900 py-3.5 text-sm font-bold text-white shadow-lg shadow-gray-200 transition hover:bg-gray-800 hover:shadow-xl"
           >
             تکمیل خرید
           </button>
         ) : (
-          <div className="mt-6 border-t border-violet-100 pt-6">
+          <div className="mt-6 border-t border-gray-100 pt-6">
             <h2 className="mb-4 font-bold text-gray-900">اطلاعات سفارش</h2>
             <CheckoutForm onSuccess={setOrderId} />
           </div>

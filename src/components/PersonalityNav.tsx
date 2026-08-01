@@ -22,7 +22,7 @@ export function PersonalityNav({ activeTrait, compact }: PersonalityNavProps) {
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                 isActive
                   ? "text-white shadow-md"
-                  : "border border-gray-200 bg-white text-gray-600 hover:border-violet-200 hover:bg-violet-50"
+                  : "border border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
               }`}
               style={
                 isActive
@@ -39,10 +39,10 @@ export function PersonalityNav({ activeTrait, compact }: PersonalityNavProps) {
           <Link
             key={trait}
             href={`/shop?trait=${trait}`}
-            className={`group flex flex-col items-center rounded-2xl border p-4 text-center transition hover:-translate-y-0.5 hover:shadow-lg ${
+            className={`group relative flex flex-col items-center rounded-2xl border p-4 text-center transition hover:-translate-y-0.5 hover:shadow-lg ${
               isActive
                 ? "border-transparent shadow-lg"
-                : "border-gray-100 bg-white hover:border-violet-200"
+                : "border-gray-100 bg-white hover:border-gray-200"
             }`}
             style={
               isActive
@@ -53,6 +53,11 @@ export function PersonalityNav({ activeTrait, compact }: PersonalityNavProps) {
                 : undefined
             }
           >
+            {/* Colored dot indicator */}
+            <div
+              className="mx-auto mb-2 h-4 w-4 rounded-full transition group-hover:scale-125"
+              style={{ backgroundColor: info.color }}
+            />
             <span className="text-3xl transition group-hover:scale-110">
               {info.emoji}
             </span>

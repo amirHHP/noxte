@@ -80,7 +80,7 @@ export default function ShopPage() {
     <Suspense
       fallback={
         <div className="flex min-h-[50vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-200 border-t-violet-600" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
         </div>
       }
     >

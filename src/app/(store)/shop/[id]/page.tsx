@@ -24,7 +24,7 @@ export default async function ProductPage({ params }: Props) {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <Link
         href="/shop"
-        className="mb-6 inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 transition hover:text-gray-900"
       >
         <ArrowRight className="h-4 w-4" />
         بازگشت به فروشگاه

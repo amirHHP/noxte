@@ -1,56 +1,10 @@
+import { prisma } from "./prisma";
+import type { AISettings, Order, OrderStatus } from "./types";
 import { promises as fs } from "fs";
 import path from "path";
-import type { AISettings, Order, OrderStatus } from "./types";
 
 const ORDERS_FILE = "orders.json";
 const SETTINGS_FILE = "settings.json";
-
-/** Vercel filesystem is read-only except /tmp */
-function getDataDir(): string {
-  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    return path.join("/tmp", "noxte-data");
-  }
-  return path.join(process.cwd(), "data");
-}
-
-async function ensureDataDir(): Promise<boolean> {
-  try {
-    await fs.mkdir(getDataDir(), { recursive: true });
-    return true;
-  } catch (error) {
-    console.error("Failed to create data directory:", error);
-    return false;
-  }
-}
-
-async function readJson<T>(filename: string, fallback: T): Promise<T> {
-  const filepath = path.join(getDataDir(), filename);
-  try {
-    const raw = await fs.readFile(filepath, "utf-8");
-    return JSON.parse(raw) as T;
-  } catch {
-    // Also try project data/ as read-only seed (local / build artifacts)
-    if (process.env.VERCEL) {
-      try {
-        const seed = path.join(process.cwd(), "data", filename);
-        const raw = await fs.readFile(seed, "utf-8");
-        return JSON.parse(raw) as T;
-      } catch {
-        /* ignore */
-      }
-    }
-    return fallback;
-  }
-}
-
-async function writeJson<T>(filename: string, data: T): Promise<void> {
-  const ready = await ensureDataDir();
-  if (!ready) {
-    throw new Error("امکان ذخیره داده روی این سرور وجود ندارد");
-  }
-  const filepath = path.join(getDataDir(), filename);
-  await fs.writeFile(filepath, JSON.stringify(data, null, 2), "utf-8");
-}
 
 function generateOrderId(): string {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -68,20 +22,144 @@ const DEFAULT_SETTINGS: AISettings = {
   updatedAt: new Date().toISOString(),
 };
 
-export async function getOrders(): Promise<Order[]> {
+/** Helper to check if PostgreSQL DATABASE_URL is provided */
+function hasDatabase(): boolean {
+  return Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim() !== "");
+}
+
+/* =========================================================================
+   JSON Fallback Functions (for local dev without DB)
+   ========================================================================= */
+
+function getDataDir(): string {
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return path.join("/tmp", "noxte-data");
+  }
+  return path.join(process.cwd(), "data");
+}
+
+async function ensureDataDir(): Promise<boolean> {
   try {
-    const orders = await readJson<Order[]>(ORDERS_FILE, []);
-    return orders.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  } catch (error) {
-    console.error("getOrders failed:", error);
-    return [];
+    await fs.mkdir(getDataDir(), { recursive: true });
+    return true;
+  } catch {
+    return false;
   }
 }
 
+async function readJson<T>(filename: string, fallback: T): Promise<T> {
+  const filepath = path.join(getDataDir(), filename);
+  try {
+    const raw = await fs.readFile(filepath, "utf-8");
+    return JSON.parse(raw) as T;
+  } catch {
+    if (process.env.VERCEL) {
+      try {
+        const seed = path.join(process.cwd(), "data", filename);
+        const raw = await fs.readFile(seed, "utf-8");
+        return JSON.parse(raw) as T;
+      } catch {
+        /* ignore */
+      }
+    }
+    return fallback;
+  }
+}
+
+async function writeJson<T>(filename: string, data: T): Promise<void> {
+  const ready = await ensureDataDir();
+  if (!ready) {
+    throw new Error("امکان ذخیره داده وجود ندارد");
+  }
+  const filepath = path.join(getDataDir(), filename);
+  await fs.writeFile(filepath, JSON.stringify(data, null, 2), "utf-8");
+}
+
+/* =========================================================================
+   Order Management Functions
+   ========================================================================= */
+
+export async function getOrders(): Promise<Order[]> {
+  if (hasDatabase()) {
+    try {
+      const records = await prisma.order.findMany({
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+      });
+      return records.map((r) => ({
+        id: r.id,
+        customerName: r.customerName,
+        customerEmail: r.customerEmail,
+        customerPhone: r.customerPhone ?? undefined,
+        company: r.company ?? undefined,
+        note: r.note ?? undefined,
+        totalPrice: r.totalPrice,
+        totalItems: r.totalItems,
+        status: r.status as OrderStatus,
+        paymentStatus: r.paymentStatus as any,
+        paymentAuthority: r.paymentAuthority ?? undefined,
+        paymentRefId: r.paymentRefId ?? undefined,
+        paymentCardPan: r.paymentCardPan ?? undefined,
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+        items: r.items.map((item) => ({
+          productId: item.productId,
+          productName: item.productName,
+          emoji: item.emoji,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+        })),
+      }));
+    } catch (error) {
+      console.error("Prisma getOrders failed, falling back to JSON:", error);
+    }
+  }
+
+  const orders = await readJson<Order[]>(ORDERS_FILE, []);
+  return orders.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
 export async function getOrderById(id: string): Promise<Order | undefined> {
+  if (hasDatabase()) {
+    try {
+      const r = await prisma.order.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+      if (!r) return undefined;
+      return {
+        id: r.id,
+        customerName: r.customerName,
+        customerEmail: r.customerEmail,
+        customerPhone: r.customerPhone ?? undefined,
+        company: r.company ?? undefined,
+        note: r.note ?? undefined,
+        totalPrice: r.totalPrice,
+        totalItems: r.totalItems,
+        status: r.status as OrderStatus,
+        paymentStatus: r.paymentStatus as any,
+        paymentAuthority: r.paymentAuthority ?? undefined,
+        paymentRefId: r.paymentRefId ?? undefined,
+        paymentCardPan: r.paymentCardPan ?? undefined,
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+        items: r.items.map((item) => ({
+          productId: item.productId,
+          productName: item.productName,
+          emoji: item.emoji,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+        })),
+      };
+    } catch (error) {
+      console.error("Prisma getOrderById failed, falling back to JSON:", error);
+    }
+  }
+
   const orders = await getOrders();
   return orders.find((o) => o.id === id);
 }
@@ -89,11 +167,68 @@ export async function getOrderById(id: string): Promise<Order | undefined> {
 export async function createOrder(
   data: Omit<Order, "id" | "status" | "paymentStatus" | "createdAt" | "updatedAt">
 ): Promise<Order> {
+  const orderId = generateOrderId();
+
+  if (hasDatabase()) {
+    try {
+      const created = await prisma.order.create({
+        data: {
+          id: orderId,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          customerPhone: data.customerPhone,
+          company: data.company,
+          note: data.note,
+          totalPrice: data.totalPrice,
+          totalItems: data.totalItems,
+          status: "pending",
+          paymentStatus: "pending",
+          items: {
+            create: data.items.map((item) => ({
+              productId: item.productId,
+              productName: item.productName,
+              emoji: item.emoji,
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              lineTotal: item.lineTotal,
+            })),
+          },
+        },
+        include: { items: true },
+      });
+
+      return {
+        id: created.id,
+        customerName: created.customerName,
+        customerEmail: created.customerEmail,
+        customerPhone: created.customerPhone ?? undefined,
+        company: created.company ?? undefined,
+        note: created.note ?? undefined,
+        totalPrice: created.totalPrice,
+        totalItems: created.totalItems,
+        status: created.status as OrderStatus,
+        paymentStatus: created.paymentStatus as any,
+        createdAt: created.createdAt.toISOString(),
+        updatedAt: created.updatedAt.toISOString(),
+        items: created.items.map((item) => ({
+          productId: item.productId,
+          productName: item.productName,
+          emoji: item.emoji,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+        })),
+      };
+    } catch (error) {
+      console.error("Prisma createOrder failed, falling back to JSON:", error);
+    }
+  }
+
   const orders = await readJson<Order[]>(ORDERS_FILE, []);
   const now = new Date().toISOString();
   const order: Order = {
     ...data,
-    id: generateOrderId(),
+    id: orderId,
     status: "pending",
     paymentStatus: "pending",
     createdAt: now,
@@ -108,6 +243,43 @@ export async function updateOrderStatus(
   id: string,
   status: OrderStatus
 ): Promise<Order | null> {
+  if (hasDatabase()) {
+    try {
+      const updated = await prisma.order.update({
+        where: { id },
+        data: { status },
+        include: { items: true },
+      });
+      return {
+        id: updated.id,
+        customerName: updated.customerName,
+        customerEmail: updated.customerEmail,
+        customerPhone: updated.customerPhone ?? undefined,
+        company: updated.company ?? undefined,
+        note: updated.note ?? undefined,
+        totalPrice: updated.totalPrice,
+        totalItems: updated.totalItems,
+        status: updated.status as OrderStatus,
+        paymentStatus: updated.paymentStatus as any,
+        paymentAuthority: updated.paymentAuthority ?? undefined,
+        paymentRefId: updated.paymentRefId ?? undefined,
+        paymentCardPan: updated.paymentCardPan ?? undefined,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+        items: updated.items.map((item) => ({
+          productId: item.productId,
+          productName: item.productName,
+          emoji: item.emoji,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+        })),
+      };
+    } catch (error) {
+      console.error("Prisma updateOrderStatus failed, falling back to JSON:", error);
+    }
+  }
+
   const orders = await readJson<Order[]>(ORDERS_FILE, []);
   const index = orders.findIndex((o) => o.id === id);
   if (index === -1) return null;
@@ -122,6 +294,15 @@ export async function updateOrderStatus(
 }
 
 export async function deleteOrder(id: string): Promise<boolean> {
+  if (hasDatabase()) {
+    try {
+      await prisma.order.delete({ where: { id } });
+      return true;
+    } catch (error) {
+      console.error("Prisma deleteOrder failed, falling back to JSON:", error);
+    }
+  }
+
   const orders = await readJson<Order[]>(ORDERS_FILE, []);
   const filtered = orders.filter((o) => o.id !== id);
   if (filtered.length === orders.length) return false;
@@ -132,6 +313,43 @@ export async function deleteOrder(id: string): Promise<boolean> {
 export async function getOrderByAuthority(
   authority: string
 ): Promise<Order | undefined> {
+  if (hasDatabase()) {
+    try {
+      const r = await prisma.order.findFirst({
+        where: { paymentAuthority: authority },
+        include: { items: true },
+      });
+      if (!r) return undefined;
+      return {
+        id: r.id,
+        customerName: r.customerName,
+        customerEmail: r.customerEmail,
+        customerPhone: r.customerPhone ?? undefined,
+        company: r.company ?? undefined,
+        note: r.note ?? undefined,
+        totalPrice: r.totalPrice,
+        totalItems: r.totalItems,
+        status: r.status as OrderStatus,
+        paymentStatus: r.paymentStatus as any,
+        paymentAuthority: r.paymentAuthority ?? undefined,
+        paymentRefId: r.paymentRefId ?? undefined,
+        paymentCardPan: r.paymentCardPan ?? undefined,
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+        items: r.items.map((item) => ({
+          productId: item.productId,
+          productName: item.productName,
+          emoji: item.emoji,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+        })),
+      };
+    } catch (error) {
+      console.error("Prisma getOrderByAuthority failed, falling back to JSON:", error);
+    }
+  }
+
   const orders = await readJson<Order[]>(ORDERS_FILE, []);
   return orders.find((o) => o.paymentAuthority === authority);
 }
@@ -140,6 +358,18 @@ export async function updateOrderAuthority(
   id: string,
   authority: string
 ): Promise<void> {
+  if (hasDatabase()) {
+    try {
+      await prisma.order.update({
+        where: { id },
+        data: { paymentAuthority: authority },
+      });
+      return;
+    } catch (error) {
+      console.error("Prisma updateOrderAuthority failed, falling back to JSON:", error);
+    }
+  }
+
   const orders = await readJson<Order[]>(ORDERS_FILE, []);
   const index = orders.findIndex((o) => o.id === id);
   if (index === -1) return;
@@ -159,6 +389,54 @@ export async function updateOrderPayment(
     paymentCardPan?: string;
   }
 ): Promise<Order | null> {
+  if (hasDatabase()) {
+    try {
+      const current = await prisma.order.findUnique({ where: { id } });
+      if (!current) return null;
+
+      const nextStatus = paymentData.paymentStatus === "paid" ? "confirmed" : current.status;
+
+      const updated = await prisma.order.update({
+        where: { id },
+        data: {
+          paymentStatus: paymentData.paymentStatus,
+          paymentRefId: paymentData.paymentRefId,
+          paymentCardPan: paymentData.paymentCardPan,
+          status: nextStatus,
+        },
+        include: { items: true },
+      });
+
+      return {
+        id: updated.id,
+        customerName: updated.customerName,
+        customerEmail: updated.customerEmail,
+        customerPhone: updated.customerPhone ?? undefined,
+        company: updated.company ?? undefined,
+        note: updated.note ?? undefined,
+        totalPrice: updated.totalPrice,
+        totalItems: updated.totalItems,
+        status: updated.status as OrderStatus,
+        paymentStatus: updated.paymentStatus as any,
+        paymentAuthority: updated.paymentAuthority ?? undefined,
+        paymentRefId: updated.paymentRefId ?? undefined,
+        paymentCardPan: updated.paymentCardPan ?? undefined,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+        items: updated.items.map((item) => ({
+          productId: item.productId,
+          productName: item.productName,
+          emoji: item.emoji,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+        })),
+      };
+    } catch (error) {
+      console.error("Prisma updateOrderPayment failed, falling back to JSON:", error);
+    }
+  }
+
   const orders = await readJson<Order[]>(ORDERS_FILE, []);
   const index = orders.findIndex((o) => o.id === id);
   if (index === -1) return null;
@@ -166,7 +444,6 @@ export async function updateOrderPayment(
   orders[index] = {
     ...orders[index],
     ...paymentData,
-    // Auto-confirm order on successful payment
     status: paymentData.paymentStatus === "paid" ? "confirmed" : orders[index].status,
     updatedAt: new Date().toISOString(),
   };
@@ -174,7 +451,32 @@ export async function updateOrderPayment(
   return orders[index];
 }
 
+/* =========================================================================
+   AI Settings Functions
+   ========================================================================= */
+
 export async function getAISettings(): Promise<AISettings> {
+  if (hasDatabase()) {
+    try {
+      const record = await prisma.aISettings.findUnique({
+        where: { id: "default" },
+      });
+      if (record) {
+        return {
+          provider: record.provider as any,
+          openaiApiKey: record.openaiApiKey,
+          openaiModel: record.openaiModel,
+          geminiApiKey: record.geminiApiKey,
+          geminiModel: record.geminiModel,
+          useEnvFallback: record.useEnvFallback,
+          updatedAt: record.updatedAt.toISOString(),
+        };
+      }
+    } catch (error) {
+      console.error("Prisma getAISettings failed, falling back to JSON:", error);
+    }
+  }
+
   try {
     return await readJson<AISettings>(SETTINGS_FILE, DEFAULT_SETTINGS);
   } catch (error) {
@@ -196,6 +498,38 @@ export async function updateAISettings(
     >
   >
 ): Promise<AISettings> {
+  if (hasDatabase()) {
+    try {
+      const updated = await prisma.aISettings.upsert({
+        where: { id: "default" },
+        create: {
+          id: "default",
+          provider: updates.provider ?? DEFAULT_SETTINGS.provider,
+          openaiApiKey: updates.openaiApiKey ?? DEFAULT_SETTINGS.openaiApiKey,
+          openaiModel: updates.openaiModel ?? DEFAULT_SETTINGS.openaiModel,
+          geminiApiKey: updates.geminiApiKey ?? DEFAULT_SETTINGS.geminiApiKey,
+          geminiModel: updates.geminiModel ?? DEFAULT_SETTINGS.geminiModel,
+          useEnvFallback: updates.useEnvFallback ?? DEFAULT_SETTINGS.useEnvFallback,
+        },
+        update: {
+          ...updates,
+        },
+      });
+
+      return {
+        provider: updated.provider as any,
+        openaiApiKey: updated.openaiApiKey,
+        openaiModel: updated.openaiModel,
+        geminiApiKey: updated.geminiApiKey,
+        geminiModel: updated.geminiModel,
+        useEnvFallback: updated.useEnvFallback,
+        updatedAt: updated.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      console.error("Prisma updateAISettings failed, falling back to JSON:", error);
+    }
+  }
+
   const current = await getAISettings();
   const next: AISettings = {
     ...current,

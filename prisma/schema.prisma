@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id               String      @id
+  customerName     String
+  customerEmail    String
+  customerPhone    String?
+  company          String?
+  note             String?
+  totalPrice       Float
+  totalItems       Int
+  status           String      @default("pending")
+  paymentStatus    String      @default("pending")
+  paymentAuthority String?
+  paymentRefId     String?
+  paymentCardPan   String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  items            OrderItem[]
+
+  @@index([paymentAuthority])
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  productName String
+  emoji       String
+  unitPrice   Float
+  quantity    Int
+  lineTotal   Float
+}
+
+model AISettings {
+  id             String   @id @default("default")
+  provider       String   @default("gemini")
+  openaiApiKey   String   @default("")
+  openaiModel    String   @default("gpt-4o-mini")
+  geminiApiKey   String   @default("")
+  geminiModel    String   @default("gemini-2.5-flash")
+  useEnvFallback Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
+}

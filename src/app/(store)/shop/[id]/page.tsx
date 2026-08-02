@@ -2,21 +2,24 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { BulkOrderPanel } from "@/components/BulkOrderPanel";
-import { getProductById } from "@/lib/products";
+import { getProductById as getProductByIdFromDb } from "@/lib/db";
+import { getProductById as getProductByIdFallback } from "@/lib/products";
 import { TRAIT_LABELS } from "@/lib/traits";
-import { PRODUCTS } from "@/lib/products";
+
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
-export async function generateStaticParams() {
-  return PRODUCTS.map((p) => ({ id: p.id }));
-}
-
 export default async function ProductPage({ params }: Props) {
   const { id } = await params;
-  const product = getProductById(id);
+  
+  // Try database first, then fall back to hardcoded
+  let product = await getProductByIdFromDb(id);
+  if (!product) {
+    product = getProductByIdFallback(id);
+  }
 
   if (!product) notFound();
 

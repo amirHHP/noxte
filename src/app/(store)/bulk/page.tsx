@@ -1,19 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Package, ShoppingBag } from "lucide-react";
 import { PRODUCTS, BULK_TIERS, formatPrice, calculatePrice } from "@/lib/products";
 import { useCartStore } from "@/lib/cart-store";
 import { FloatingDots } from "@/components/FloatingDots";
+import type { Product } from "@/lib/types";
 
 const TIER_DOTS = ["bg-gray-300", "bg-noxte-green", "bg-noxte-blue", "bg-noxte-red"];
 
 export default function BulkPage() {
+  const [dbProducts, setDbProducts] = useState<Product[] | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<
     Record<string, number>
   >({});
   const addItem = useCartStore((s) => s.addItem);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) setDbProducts(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const allProducts = dbProducts ?? PRODUCTS;
 
   const updateQty = (id: string, qty: number) => {
     if (qty <= 0) {
@@ -27,13 +40,13 @@ export default function BulkPage() {
 
   const totalQty = Object.values(selectedProducts).reduce((s, q) => s + q, 0);
   const totalPrice = Object.entries(selectedProducts).reduce((sum, [id, qty]) => {
-    const product = PRODUCTS.find((p) => p.id === id);
+    const product = allProducts.find((p) => p.id === id);
     return sum + (product ? calculatePrice(product.price, qty) : 0);
   }, 0);
 
   const handleAddAll = () => {
     for (const [id, qty] of Object.entries(selectedProducts)) {
-      const product = PRODUCTS.find((p) => p.id === id);
+      const product = allProducts.find((p) => p.id === id);
       if (product) addItem(product, qty);
     }
     setSelectedProducts({});
@@ -88,7 +101,7 @@ export default function BulkPage() {
             </tr>
           </thead>
           <tbody>
-            {PRODUCTS.map((product) => {
+            {allProducts.map((product) => {
               const qty = selectedProducts[product.id] || 0;
               const lineTotal = qty > 0 ? calculatePrice(product.price, qty) : 0;
 

@@ -1,10 +1,11 @@
 import { prisma } from "./prisma";
-import type { AISettings, Order, OrderStatus } from "./types";
+import type { AISettings, Order, OrderStatus, Product, PersonalityTrait } from "./types";
 import { promises as fs } from "fs";
 import path from "path";
 
 const ORDERS_FILE = "orders.json";
 const SETTINGS_FILE = "settings.json";
+const PRODUCTS_FILE = "products.json";
 
 function generateOrderId(): string {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -449,6 +450,229 @@ export async function updateOrderPayment(
   };
   await writeJson(ORDERS_FILE, orders);
   return orders[index];
+}
+
+/* =========================================================================
+   Product Management Functions
+   ========================================================================= */
+
+function mapPrismaProduct(r: {
+  id: string;
+  name: string;
+  nameEn: string;
+  description: string;
+  price: number;
+  emoji: string;
+  color: string;
+  traits: string[];
+  occasion: string[];
+  size: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}): Product {
+  return {
+    id: r.id,
+    name: r.name,
+    nameEn: r.nameEn,
+    description: r.description,
+    price: r.price,
+    emoji: r.emoji,
+    color: r.color,
+    traits: r.traits as PersonalityTrait[],
+    occasion: r.occasion,
+    size: r.size,
+    isActive: r.isActive,
+    sortOrder: r.sortOrder,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  };
+}
+
+/** Get active products (for storefront) */
+export async function getProducts(): Promise<Product[]> {
+  if (hasDatabase()) {
+    try {
+      const records = await prisma.product.findMany({
+        where: { isActive: true },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      });
+      return records.map(mapPrismaProduct);
+    } catch (error) {
+      console.error("Prisma getProducts failed, falling back to JSON:", error);
+    }
+  }
+  const products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  return products.filter((p) => p.isActive !== false);
+}
+
+/** Get ALL products including inactive (for admin) */
+export async function getAllProducts(): Promise<Product[]> {
+  if (hasDatabase()) {
+    try {
+      const records = await prisma.product.findMany({
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      });
+      return records.map(mapPrismaProduct);
+    } catch (error) {
+      console.error("Prisma getAllProducts failed, falling back to JSON:", error);
+    }
+  }
+  return readJson<Product[]>(PRODUCTS_FILE, []);
+}
+
+export async function getProductById(id: string): Promise<Product | undefined> {
+  if (hasDatabase()) {
+    try {
+      const r = await prisma.product.findUnique({ where: { id } });
+      if (!r) return undefined;
+      return mapPrismaProduct(r);
+    } catch (error) {
+      console.error("Prisma getProductById failed, falling back to JSON:", error);
+    }
+  }
+  const products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  return products.find((p) => p.id === id);
+}
+
+export async function createProduct(
+  data: Omit<Product, "createdAt" | "updatedAt">
+): Promise<Product> {
+  if (hasDatabase()) {
+    try {
+      const created = await prisma.product.create({
+        data: {
+          id: data.id,
+          name: data.name,
+          nameEn: data.nameEn,
+          description: data.description,
+          price: data.price,
+          emoji: data.emoji,
+          color: data.color,
+          traits: data.traits,
+          occasion: data.occasion,
+          size: data.size,
+          isActive: data.isActive ?? true,
+          sortOrder: data.sortOrder ?? 0,
+        },
+      });
+      return mapPrismaProduct(created);
+    } catch (error) {
+      console.error("Prisma createProduct failed, falling back to JSON:", error);
+    }
+  }
+  const products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  const now = new Date().toISOString();
+  const product: Product = {
+    ...data,
+    isActive: data.isActive ?? true,
+    sortOrder: data.sortOrder ?? 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+  products.push(product);
+  await writeJson(PRODUCTS_FILE, products);
+  return product;
+}
+
+export async function updateProduct(
+  id: string,
+  data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>
+): Promise<Product | null> {
+  if (hasDatabase()) {
+    try {
+      const updated = await prisma.product.update({
+        where: { id },
+        data: {
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.nameEn !== undefined && { nameEn: data.nameEn }),
+          ...(data.description !== undefined && { description: data.description }),
+          ...(data.price !== undefined && { price: data.price }),
+          ...(data.emoji !== undefined && { emoji: data.emoji }),
+          ...(data.color !== undefined && { color: data.color }),
+          ...(data.traits !== undefined && { traits: data.traits }),
+          ...(data.occasion !== undefined && { occasion: data.occasion }),
+          ...(data.size !== undefined && { size: data.size }),
+          ...(data.isActive !== undefined && { isActive: data.isActive }),
+          ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
+        },
+      });
+      return mapPrismaProduct(updated);
+    } catch (error) {
+      console.error("Prisma updateProduct failed, falling back to JSON:", error);
+    }
+  }
+  const products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  const index = products.findIndex((p) => p.id === id);
+  if (index === -1) return null;
+  products[index] = {
+    ...products[index],
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+  await writeJson(PRODUCTS_FILE, products);
+  return products[index];
+}
+
+export async function deleteProduct(id: string): Promise<boolean> {
+  if (hasDatabase()) {
+    try {
+      await prisma.product.delete({ where: { id } });
+      return true;
+    } catch (error) {
+      console.error("Prisma deleteProduct failed, falling back to JSON:", error);
+    }
+  }
+  const products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  const filtered = products.filter((p) => p.id !== id);
+  if (filtered.length === products.length) return false;
+  await writeJson(PRODUCTS_FILE, filtered);
+  return true;
+}
+
+export async function seedProducts(seedData: Omit<Product, "createdAt" | "updatedAt">[]): Promise<number> {
+  if (hasDatabase()) {
+    try {
+      const existing = await prisma.product.count();
+      if (existing > 0) return 0;
+      let count = 0;
+      for (const data of seedData) {
+        await prisma.product.create({
+          data: {
+            id: data.id,
+            name: data.name,
+            nameEn: data.nameEn,
+            description: data.description,
+            price: data.price,
+            emoji: data.emoji,
+            color: data.color,
+            traits: data.traits,
+            occasion: data.occasion,
+            size: data.size,
+            isActive: data.isActive ?? true,
+            sortOrder: data.sortOrder ?? count,
+          },
+        });
+        count++;
+      }
+      return count;
+    } catch (error) {
+      console.error("Prisma seedProducts failed:", error);
+    }
+  }
+  const products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  if (products.length > 0) return 0;
+  const now = new Date().toISOString();
+  const seeded = seedData.map((d, i) => ({
+    ...d,
+    isActive: d.isActive ?? true,
+    sortOrder: d.sortOrder ?? i,
+    createdAt: now,
+    updatedAt: now,
+  }));
+  await writeJson(PRODUCTS_FILE, seeded);
+  return seeded.length;
 }
 
 /* =========================================================================

@@ -23,6 +23,10 @@ export interface Product {
   traits: PersonalityTrait[];
   occasion: string[];
   size: string;
+  isActive?: boolean;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CartItem {

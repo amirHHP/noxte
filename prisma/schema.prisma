@@ -43,6 +43,23 @@ model OrderItem {
   lineTotal   Float
 }
 
+model Product {
+  id          String   @id
+  name        String
+  nameEn      String   @default("")
+  description String   @default("")
+  price       Float
+  emoji       String   @default("🎁")
+  color       String   @default("#f5f5f5")
+  traits      String[]
+  occasion    String[]
+  size        String   @default("")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model AISettings {
   id             String   @id @default("default")
   provider       String   @default("gemini")

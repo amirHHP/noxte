@@ -1,12 +1,12 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import { PersonalityNav } from "@/components/PersonalityNav";
 import { PRODUCTS, getProductsByTrait } from "@/lib/products";
 import { TRAIT_LABELS } from "@/lib/traits";
-import type { PersonalityTrait } from "@/lib/types";
+import type { Product, PersonalityTrait } from "@/lib/types";
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -14,21 +14,40 @@ function ShopContent() {
   const browse = searchParams.get("browse");
   const search = searchParams.get("q");
 
-  let products = PRODUCTS;
+  const [dbProducts, setDbProducts] = useState<Product[] | null>(null);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) setDbProducts(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const allProducts = dbProducts ?? PRODUCTS;
+
+  let products = allProducts;
   let title = "همه محصولات";
-  let subtitle = `${PRODUCTS.length} بج مینیاتوری`;
+  let subtitle = `${allProducts.length} بج مینیاتوری`;
 
   if (trait && TRAIT_LABELS[trait]) {
-    products = getProductsByTrait(trait);
+    if (dbProducts) {
+      products = allProducts.filter((p) =>
+        p.traits.includes(trait)
+      );
+    } else {
+      products = getProductsByTrait(trait);
+    }
     title = `بج برای ${TRAIT_LABELS[trait].fa}‌ها`;
     subtitle = TRAIT_LABELS[trait].description;
   } else if (search) {
     const q = search.toLowerCase();
-    products = PRODUCTS.filter(
+    products = allProducts.filter(
       (p) =>
         p.name.includes(q) ||
         p.description.includes(q) ||
-        p.traits.some((t) => TRAIT_LABELS[t].fa.includes(q))
+        p.traits.some((t) => TRAIT_LABELS[t]?.fa.includes(q))
     );
     title = `نتایج جستجو: «${search}»`;
     subtitle = `${products.length} محصول یافت شد`;

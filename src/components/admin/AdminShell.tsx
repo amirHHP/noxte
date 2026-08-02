@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
+  ShoppingBag,
   Settings,
   LogOut,
   ExternalLink,
@@ -12,6 +13,7 @@ import {
 
 const NAV = [
   { href: "/admin", label: "داشبورد", icon: LayoutDashboard },
+  { href: "/admin/products", label: "محصولات", icon: ShoppingBag },
   { href: "/admin/orders", label: "سفارشات", icon: Package },
   { href: "/admin/settings", label: "تنظیمات AI", icon: Settings },
 ];

@@ -7,7 +7,8 @@ export const BULK_TIERS: BulkTier[] = [
   { min: 100, discount: 0.3, label: "۱۰۰+ عدد (۳۰٪ تخفیف)" },
 ];
 
-export const PRODUCTS: Product[] = [
+/** Seed data — used for initial database seeding and as JSON fallback */
+export const SEED_PRODUCTS: Product[] = [
   {
     id: "heart-badge",
     name: "بج قلب مهربان",
@@ -202,12 +203,15 @@ export const PRODUCTS: Product[] = [
   },
 ];
 
+/** Backward-compatible alias */
+export const PRODUCTS = SEED_PRODUCTS;
+
 export function getProductById(id: string): Product | undefined {
-  return PRODUCTS.find((p) => p.id === id);
+  return SEED_PRODUCTS.find((p) => p.id === id);
 }
 
 export function getProductsByTrait(trait: string): Product[] {
-  return PRODUCTS.filter((p) => p.traits.includes(trait as Product["traits"][number]));
+  return SEED_PRODUCTS.filter((p) => p.traits.includes(trait as Product["traits"][number]));
 }
 
 export function getBulkDiscount(quantity: number): number {

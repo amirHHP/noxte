@@ -3,10 +3,11 @@ import { Sparkles, Package, Heart, ArrowLeft } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
 import { PersonalityNav } from "@/components/PersonalityNav";
 import { FloatingDots } from "@/components/FloatingDots";
-import { PRODUCTS } from "@/lib/products";
+import { getProducts } from "@/lib/db";
 
-export default function HomePage() {
-  const featured = PRODUCTS.slice(0, 6);
+export default async function HomePage() {
+  const products = await getProducts();
+  const featured = products.slice(0, 6);
 
   return (
     <div>

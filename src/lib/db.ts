@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import type { AISettings, Order, OrderStatus, Product, PersonalityTrait } from "./types";
+import { SEED_PRODUCTS } from "./products";
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -494,16 +495,27 @@ function mapPrismaProduct(r: {
 export async function getProducts(): Promise<Product[]> {
   if (hasDatabase()) {
     try {
-      const records = await prisma.product.findMany({
+      let records = await prisma.product.findMany({
         where: { isActive: true },
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       });
+      if (records.length === 0) {
+        await seedProducts(SEED_PRODUCTS);
+        records = await prisma.product.findMany({
+          where: { isActive: true },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        });
+      }
       return records.map(mapPrismaProduct);
     } catch (error) {
       console.error("Prisma getProducts failed, falling back to JSON:", error);
     }
   }
-  const products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  let products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  if (products.length === 0) {
+    await seedProducts(SEED_PRODUCTS);
+    products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  }
   return products.filter((p) => p.isActive !== false);
 }
 
@@ -511,15 +523,26 @@ export async function getProducts(): Promise<Product[]> {
 export async function getAllProducts(): Promise<Product[]> {
   if (hasDatabase()) {
     try {
-      const records = await prisma.product.findMany({
+      let records = await prisma.product.findMany({
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       });
+      if (records.length === 0) {
+        await seedProducts(SEED_PRODUCTS);
+        records = await prisma.product.findMany({
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        });
+      }
       return records.map(mapPrismaProduct);
     } catch (error) {
       console.error("Prisma getAllProducts failed, falling back to JSON:", error);
     }
   }
-  return readJson<Product[]>(PRODUCTS_FILE, []);
+  let products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  if (products.length === 0) {
+    await seedProducts(SEED_PRODUCTS);
+    products = await readJson<Product[]>(PRODUCTS_FILE, []);
+  }
+  return products;
 }
 
 export async function getProductById(id: string): Promise<Product | undefined> {
@@ -634,27 +657,28 @@ export async function deleteProduct(id: string): Promise<boolean> {
 export async function seedProducts(seedData: Omit<Product, "createdAt" | "updatedAt">[]): Promise<number> {
   if (hasDatabase()) {
     try {
-      const existing = await prisma.product.count();
-      if (existing > 0) return 0;
       let count = 0;
       for (const data of seedData) {
-        await prisma.product.create({
-          data: {
-            id: data.id,
-            name: data.name,
-            nameEn: data.nameEn,
-            description: data.description,
-            price: data.price,
-            emoji: data.emoji,
-            color: data.color,
-            traits: data.traits,
-            occasion: data.occasion,
-            size: data.size,
-            isActive: data.isActive ?? true,
-            sortOrder: data.sortOrder ?? count,
-          },
-        });
-        count++;
+        const existing = await prisma.product.findUnique({ where: { id: data.id } });
+        if (!existing) {
+          await prisma.product.create({
+            data: {
+              id: data.id,
+              name: data.name,
+              nameEn: data.nameEn,
+              description: data.description,
+              price: data.price,
+              emoji: data.emoji,
+              color: data.color,
+              traits: data.traits,
+              occasion: data.occasion,
+              size: data.size,
+              isActive: data.isActive ?? true,
+              sortOrder: data.sortOrder ?? count,
+            },
+          });
+          count++;
+        }
       }
       return count;
     } catch (error) {
@@ -662,17 +686,26 @@ export async function seedProducts(seedData: Omit<Product, "createdAt" | "update
     }
   }
   const products = await readJson<Product[]>(PRODUCTS_FILE, []);
-  if (products.length > 0) return 0;
+  const existingIds = new Set(products.map((p) => p.id));
   const now = new Date().toISOString();
-  const seeded = seedData.map((d, i) => ({
-    ...d,
-    isActive: d.isActive ?? true,
-    sortOrder: d.sortOrder ?? i,
-    createdAt: now,
-    updatedAt: now,
-  }));
-  await writeJson(PRODUCTS_FILE, seeded);
-  return seeded.length;
+  let addedCount = 0;
+  for (let i = 0; i < seedData.length; i++) {
+    const d = seedData[i];
+    if (!existingIds.has(d.id)) {
+      products.push({
+        ...d,
+        isActive: d.isActive ?? true,
+        sortOrder: d.sortOrder ?? i,
+        createdAt: now,
+        updatedAt: now,
+      });
+      addedCount++;
+    }
+  }
+  if (addedCount > 0) {
+    await writeJson(PRODUCTS_FILE, products);
+  }
+  return addedCount;
 }
 
 /* =========================================================================

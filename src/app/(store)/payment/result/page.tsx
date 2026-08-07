@@ -85,13 +85,23 @@ function PaymentResultContent() {
             می‌گیریم.
           </p>
 
-          <Link
-            href="/shop"
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-gray-800"
-          >
-            ادامه خرید
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            {orderId && (
+              <Link
+                href={`/track?id=${orderId}`}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 shadow-md shadow-emerald-200"
+              >
+                پیگیری وضعیت سفارش
+              </Link>
+            )}
+            <Link
+              href="/shop"
+              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-6 py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50"
+            >
+              ادامه خرید
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </div>
     );

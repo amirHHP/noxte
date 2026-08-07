@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/shop?browse=traits", label: "ویژگی‌های اخلاقی" },
   { href: "/advisor", label: "مشاور هدیه AI" },
   { href: "/bulk", label: "خرید عمده" },
+  { href: "/track", label: "پیگیری سفارش" },
 ];
 
 export function Header() {

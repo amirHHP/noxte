@@ -166,6 +166,65 @@ export async function getOrderById(id: string): Promise<Order | undefined> {
   return orders.find((o) => o.id === id);
 }
 
+export async function searchOrders(query: string): Promise<Order[]> {
+  const q = query.trim();
+  if (!q) return [];
+
+  if (hasDatabase()) {
+    try {
+      const records = await prisma.order.findMany({
+        where: {
+          OR: [
+            { id: { equals: q, mode: "insensitive" } },
+            { customerEmail: { equals: q, mode: "insensitive" } },
+            { customerPhone: { contains: q } },
+          ],
+        },
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return records.map((r) => ({
+        id: r.id,
+        customerName: r.customerName,
+        customerEmail: r.customerEmail,
+        customerPhone: r.customerPhone ?? undefined,
+        company: r.company ?? undefined,
+        note: r.note ?? undefined,
+        totalPrice: r.totalPrice,
+        totalItems: r.totalItems,
+        status: r.status as OrderStatus,
+        paymentStatus: r.paymentStatus as any,
+        paymentAuthority: r.paymentAuthority ?? undefined,
+        paymentRefId: r.paymentRefId ?? undefined,
+        paymentCardPan: r.paymentCardPan ?? undefined,
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+        items: r.items.map((item) => ({
+          productId: item.productId,
+          productName: item.productName,
+          emoji: item.emoji,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+        })),
+      }));
+    } catch (error) {
+      console.error("Prisma searchOrders failed, falling back to JSON:", error);
+    }
+  }
+
+  const lowerQ = q.toLowerCase();
+  const orders = await getOrders();
+  return orders.filter(
+    (o) =>
+      o.id.toLowerCase() === lowerQ ||
+      o.customerEmail.toLowerCase() === lowerQ ||
+      (o.customerPhone && o.customerPhone.includes(q))
+  );
+}
+
+
 export async function createOrder(
   data: Omit<Order, "id" | "status" | "paymentStatus" | "createdAt" | "updatedAt">
 ): Promise<Order> {

@@ -30,6 +30,9 @@ export function Footer() {
             <Link href="/bulk" className="transition hover:text-gray-900">
               خرید عمده
             </Link>
+            <Link href="/track" className="transition hover:text-gray-900">
+              پیگیری سفارش
+            </Link>
           </div>
         </div>
         <p className="mt-4 text-center text-xs text-gray-400">

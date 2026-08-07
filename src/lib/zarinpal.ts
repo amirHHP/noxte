@@ -13,12 +13,24 @@ const DEFAULT_SANDBOX_MERCHANT =
   "00000000-0000-0000-0000-000000000000";
 
 function isSandbox(): boolean {
-  return process.env.ZARINPAL_SANDBOX !== "false";
+  const envVal = process.env.ZARINPAL_SANDBOX?.trim().toLowerCase();
+  if (envVal === "false" || envVal === "0" || envVal === "no" || envVal === "off") {
+    return false;
+  }
+  if (envVal === "true" || envVal === "1" || envVal === "yes" || envVal === "on") {
+    return true;
+  }
+  // Auto-detect: if a non-default merchant ID is set, default to production (false)
+  const merchantId = process.env.ZARINPAL_MERCHANT_ID?.trim();
+  if (merchantId && merchantId !== DEFAULT_SANDBOX_MERCHANT) {
+    return false;
+  }
+  return true;
 }
 
 function getMerchantId(): string {
   return (
-    process.env.ZARINPAL_MERCHANT_ID || DEFAULT_SANDBOX_MERCHANT
+    process.env.ZARINPAL_MERCHANT_ID?.trim() || DEFAULT_SANDBOX_MERCHANT
   );
 }
 
@@ -105,7 +117,30 @@ export async function requestPayment(
   };
 
   if (metadata) {
-    body.metadata = metadata;
+    const cleanedMetadata: Record<string, string> = {};
+
+    if (metadata.email && metadata.email.trim() !== "") {
+      cleanedMetadata.email = metadata.email.trim();
+    }
+
+    if (metadata.mobile && typeof metadata.mobile === "string") {
+      let mobile = metadata.mobile
+        .replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d).toString())
+        .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d).toString())
+        .replace(/\D/g, "");
+
+      if (mobile.startsWith("989")) {
+        mobile = "0" + mobile.slice(2);
+      }
+
+      if (/^09\d{9}$/.test(mobile)) {
+        cleanedMetadata.mobile = mobile;
+      }
+    }
+
+    if (Object.keys(cleanedMetadata).length > 0) {
+      body.metadata = cleanedMetadata;
+    }
   }
 
   let json: any;

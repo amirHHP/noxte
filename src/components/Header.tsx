@@ -17,6 +17,7 @@ export function Header() {
     { href: "/shop?browse=traits", label: t("navTraits") },
     { href: "/advisor", label: t("navAdvisor") },
     { href: "/bulk", label: t("navBulk") },
+    { href: "/blog", label: t("navBlog") },
     { href: "/track", label: t("navTrack") },
   ];
 

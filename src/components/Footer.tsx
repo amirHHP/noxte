@@ -35,6 +35,9 @@ export function Footer() {
             <Link href="/bulk" className="transition hover:text-gray-900">
               {t("navBulk")}
             </Link>
+            <Link href="/blog" className="transition hover:text-gray-900">
+              {t("navBlog")}
+            </Link>
             <Link href="/track" className="transition hover:text-gray-900">
               {t("navTrack")}
             </Link>

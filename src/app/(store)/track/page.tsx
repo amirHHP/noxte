@@ -25,12 +25,14 @@ import {
 import type { Order, OrderStatus } from "@/lib/types";
 import { ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/types";
 
-const STEPS: { status: OrderStatus; label: string; icon: any }[] = [
-  { status: "pending", label: "ثبت سفارش", icon: Clock },
-  { status: "confirmed", label: "تأیید پرداخت", icon: CreditCard },
-  { status: "processing", label: "در حال آماده‌سازی", icon: Package },
-  { status: "shipped", label: "تحویل به پست/ارسال", icon: Truck },
-  { status: "delivered", label: "تحویل داده شد", icon: CheckCircle2 },
+import { useLanguage } from "@/lib/i18n/language-context";
+
+const STEPS: { status: OrderStatus; labelFa: string; labelEn: string; icon: any }[] = [
+  { status: "pending", labelFa: "ثبت سفارش", labelEn: "Order Placed", icon: Clock },
+  { status: "confirmed", labelFa: "تأیید پرداخت", labelEn: "Payment Confirmed", icon: CreditCard },
+  { status: "processing", labelFa: "در حال آماده‌سازی", labelEn: "Processing", icon: Package },
+  { status: "shipped", labelFa: "تحویل به پست/ارسال", labelEn: "Shipped", icon: Truck },
+  { status: "delivered", labelFa: "تحویل داده شد", labelEn: "Delivered", icon: CheckCircle2 },
 ];
 
 function getStepIndex(status: OrderStatus): number {
@@ -53,6 +55,7 @@ function getStepIndex(status: OrderStatus): number {
 }
 
 function StatusBadge({ status }: { status: OrderStatus }) {
+  const { language } = useLanguage();
   const styles: Record<OrderStatus, string> = {
     pending: "bg-amber-50 text-amber-700 border-amber-200",
     confirmed: "bg-blue-50 text-blue-700 border-blue-200",
@@ -62,6 +65,17 @@ function StatusBadge({ status }: { status: OrderStatus }) {
     cancelled: "bg-rose-50 text-rose-700 border-rose-200",
   };
 
+  const statusEn: Record<OrderStatus, string> = {
+    pending: "Pending",
+    confirmed: "Confirmed",
+    processing: "Processing",
+    shipped: "Shipped",
+    delivered: "Delivered",
+    cancelled: "Cancelled",
+  };
+
+  const label = language === "fa" ? (ORDER_STATUS_LABELS[status] || status) : (statusEn[status] || status);
+
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${
@@ -69,12 +83,13 @@ function StatusBadge({ status }: { status: OrderStatus }) {
       }`}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {ORDER_STATUS_LABELS[status] || status}
+      {label}
     </span>
   );
 }
 
 function TrackContent() {
+  const { language } = useLanguage();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("id") || searchParams.get("q") || "";
 
@@ -287,7 +302,7 @@ function TrackContent() {
                                     : "text-gray-400"
                                 }`}
                               >
-                                {step.label}
+                                {language === "fa" ? step.labelFa : step.labelEn}
                               </span>
                             </div>
                           );

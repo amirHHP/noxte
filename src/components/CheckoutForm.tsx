@@ -5,12 +5,14 @@ import { Loader2, CreditCard, ShieldCheck } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { calculatePrice } from "@/lib/products";
 import type { OrderItem } from "@/lib/types";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 export function CheckoutForm() {
   const { items, totalPrice, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [redirecting, setRedirecting] = useState(false);
+  const { t, language } = useLanguage();
   const [form, setForm] = useState({
     customerName: "",
     customerEmail: "",
@@ -49,7 +51,7 @@ export function CheckoutForm() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "خطا در ثبت سفارش");
+        setError(data.error || (language === "fa" ? "خطا در ثبت سفارش" : "Error submitting order"));
         return;
       }
 
@@ -61,7 +63,7 @@ export function CheckoutForm() {
         window.location.href = data.paymentUrl;
       }
     } catch {
-      setError("خطا در ارتباط با سرور");
+      setError(language === "fa" ? "خطا در ارتباط با سرور" : "Server communication error");
     } finally {
       if (!redirecting) {
         setLoading(false);
@@ -79,10 +81,10 @@ export function CheckoutForm() {
           <CreditCard className="h-8 w-8 text-amber-600 animate-pulse" />
         </div>
         <h2 className="text-lg font-bold text-gray-900">
-          در حال انتقال به درگاه پرداخت...
+          {language === "fa" ? "در حال انتقال به درگاه پرداخت..." : "Redirecting to payment gateway..."}
         </h2>
         <p className="mt-2 text-sm text-gray-500">
-          لطفاً صفحه را نبندید
+          {language === "fa" ? "لطفاً صفحه را نبندید" : "Please do not close this window"}
         </p>
         <Loader2 className="mx-auto mt-4 h-6 w-6 animate-spin text-amber-600" />
       </div>
@@ -94,7 +96,7 @@ export function CheckoutForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
-            نام و نام خانوادگی *
+            {t("fullName")} *
           </label>
           <input
             required
@@ -105,7 +107,7 @@ export function CheckoutForm() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
-            ایمیل *
+            {language === "fa" ? "ایمیل *" : "Email Address *"}
           </label>
           <input
             required
@@ -118,7 +120,7 @@ export function CheckoutForm() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
-            تلفن
+            {t("phoneNumber")}
           </label>
           <input
             value={form.customerPhone}
@@ -129,7 +131,7 @@ export function CheckoutForm() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
-            شرکت / تیم
+            {t("companyName")}
           </label>
           <input
             value={form.company}
@@ -141,13 +143,13 @@ export function CheckoutForm() {
 
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-700">
-          یادداشت (اختیاری)
+          {t("orderNotes")}
         </label>
         <textarea
           value={form.note}
           onChange={(e) => update("note", e.target.value)}
           rows={2}
-          placeholder="مثلاً: برای تیم محصول، تحویل فوری"
+          placeholder={language === "fa" ? "مثلاً: برای تیم محصول، تحویل فوری" : "e.g. For Product Team, express delivery"}
           className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
         />
       </div>
@@ -166,19 +168,19 @@ export function CheckoutForm() {
         {loading ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            در حال ثبت...
+            {language === "fa" ? "در حال ثبت..." : "Submitting..."}
           </>
         ) : (
           <>
             <ShieldCheck className="h-5 w-5" />
-            پرداخت و ثبت سفارش
+            {t("payNow")}
           </>
         )}
       </button>
 
       <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
         <ShieldCheck className="h-3.5 w-3.5" />
-        <span>پرداخت امن از طریق درگاه زرین‌پال</span>
+        <span>{t("onlinePayment")}</span>
       </div>
     </form>
   );

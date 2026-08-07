@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { ALL_TRAITS, TRAIT_LABELS } from "@/lib/traits";
 import type { PersonalityTrait } from "@/lib/types";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 interface PersonalityNavProps {
   activeTrait?: PersonalityTrait | null;
@@ -8,11 +11,14 @@ interface PersonalityNavProps {
 }
 
 export function PersonalityNav({ activeTrait, compact }: PersonalityNavProps) {
+  const { language } = useLanguage();
+
   return (
     <div className={compact ? "flex flex-wrap gap-2" : "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"}>
       {ALL_TRAITS.map((trait) => {
         const info = TRAIT_LABELS[trait];
         const isActive = activeTrait === trait;
+        const traitLabel = info[language] || info.fa;
 
         if (compact) {
           return (
@@ -30,7 +36,7 @@ export function PersonalityNav({ activeTrait, compact }: PersonalityNavProps) {
                   : undefined
               }
             >
-              {info.emoji} {info.fa}
+              {info.emoji} {traitLabel}
             </Link>
           );
         }
@@ -62,7 +68,7 @@ export function PersonalityNav({ activeTrait, compact }: PersonalityNavProps) {
               {info.emoji}
             </span>
             <span className="mt-2 text-sm font-bold text-gray-900">
-              {info.fa}
+              {traitLabel}
             </span>
             <span className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-gray-500">
               {info.description}

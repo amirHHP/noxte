@@ -40,8 +40,12 @@ export async function POST(request: NextRequest) {
     });
 
     // 2. Request payment from ZarinPal
-    const origin = request.nextUrl.origin;
-    const callbackUrl = `${origin}/api/payment/verify`;
+    const baseUrl = (
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.APP_URL ||
+      request.nextUrl.origin
+    ).replace(/\/+$/, "");
+    const callbackUrl = `${baseUrl}/api/payment/verify`;
     const description = `سفارش ${order.id} — ${body.totalItems} بج مینیاتوری`;
 
     const payment = await requestPayment(

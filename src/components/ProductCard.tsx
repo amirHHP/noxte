@@ -1,67 +1,100 @@
-import Link from "next/link";
-import type { Product } from "@/lib/types";
-import { formatPrice, getBulkDiscount } from "@/lib/products";
-import { TRAIT_LABELS } from "@/lib/traits";
+"use client";
 
-const DOT_COLORS = ["bg-noxte-red", "bg-noxte-blue", "bg-noxte-green", "bg-noxte-yellow", "bg-noxte-pink"];
+import Link from "next/link";
+import Image from "next/image";
+import { ShoppingBag, Check } from "lucide-react";
+import { useState } from "react";
+import type { Product } from "@/lib/types";
+import { TRAIT_LABELS } from "@/lib/traits";
+import { useCartStore } from "@/lib/cart-store";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 interface ProductCardProps {
   product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const bulkDiscount = getBulkDiscount(10);
+  const [added, setAdded] = useState(false);
+  const addItem = useCartStore((s) => s.addItem);
+  const { t, language } = useLanguage();
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addItem(product);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
+
+  const formattedPrice = language === "fa"
+    ? product.price.toLocaleString("fa-IR")
+    : product.price.toLocaleString("en-US");
 
   return (
     <Link
       href={`/shop/${product.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white transition hover:-translate-y-1 hover:shadow-xl hover:shadow-gray-100"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
     >
-      {/* Decorative dot */}
-      <div className="pointer-events-none absolute right-3 top-3 z-10" aria-hidden="true">
-        <div
-          className={`h-2.5 w-2.5 rounded-full opacity-60 transition-all group-hover:scale-150 group-hover:opacity-100 ${DOT_COLORS[Math.abs(product.id.charCodeAt(0)) % DOT_COLORS.length]}`}
-        />
+      {/* Image container */}
+      <div className="relative aspect-square w-full overflow-hidden bg-gray-50 flex items-center justify-center text-4xl">
+        {product.emoji || "🎁"}
+        {/* Badges */}
+        <div className="absolute left-3 top-3 flex flex-wrap gap-1">
+          {product.traits.slice(0, 2).map((trait) => {
+            const info = TRAIT_LABELS[trait];
+            if (!info) return null;
+            const label = info[language] || info.fa;
+            return (
+              <span
+                key={trait}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-medium text-white shadow-sm"
+                style={{ backgroundColor: info.color }}
+              >
+                {info.emoji} {label}
+              </span>
+            );
+          })}
+        </div>
       </div>
 
-      <div
-        className="flex h-40 items-center justify-center text-6xl transition group-hover:scale-110"
-        style={{ backgroundColor: product.color }}
-      >
-        {product.emoji}
-      </div>
-
+      {/* Info */}
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-bold text-gray-900">{product.name}</h3>
+        <h3 className="text-base font-bold text-gray-900 transition group-hover:text-gray-600">
+          {language === "en" ? product.nameEn || product.name : product.name}
+        </h3>
         <p className="mt-1 line-clamp-2 text-xs text-gray-500">
           {product.description}
         </p>
 
-        <div className="mt-2 flex flex-wrap gap-1">
-          {product.traits.slice(0, 2).map((trait) => (
-            <span
-              key={trait}
-              className="rounded-full px-2 py-0.5 text-[10px] font-medium"
-              style={{
-                backgroundColor: TRAIT_LABELS[trait].color + "22",
-                color: TRAIT_LABELS[trait].color,
-              }}
-            >
-              {TRAIT_LABELS[trait].emoji} {TRAIT_LABELS[trait].fa}
-            </span>
-          ))}
-        </div>
+        <div className="mt-auto pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-lg font-black text-gray-900">
+                {formattedPrice}
+              </span>
+              <span className="mr-1 text-xs text-gray-500">{t("currency")}</span>
+            </div>
 
-        <div className="mt-auto flex items-end justify-between pt-3">
-          <div>
-            <p className="text-sm font-bold text-gray-900">
-              {formatPrice(product.price)}
-            </p>
-            <p className="text-[10px] text-gray-400">
-              از ۱۰ عدد {Math.round(bulkDiscount * 100)}٪ تخفیف
-            </p>
+            <button
+              onClick={handleAddToCart}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition ${
+                added
+                  ? "bg-emerald-600 text-white"
+                  : "bg-gray-900 text-white hover:bg-gray-800"
+              }`}
+            >
+              {added ? (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  {t("addedToCart")}
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="h-3.5 w-3.5" />
+                  {t("addToCart")}
+                </>
+              )}
+            </button>
           </div>
-          <span className="text-[10px] text-gray-400">{product.size}</span>
         </div>
       </div>
     </Link>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import {
   calculatePrice,
@@ -10,42 +10,50 @@ import {
 } from "@/lib/products";
 import { CheckoutForm } from "@/components/CheckoutForm";
 import { useState } from "react";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, clearCart, totalPrice } =
     useCartStore();
   const [showCheckout, setShowCheckout] = useState(false);
+  const { t, language, dir } = useLanguage();
+
+  const ArrowIcon = dir === "rtl" ? ArrowLeft : ArrowRight;
 
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center">
         <ShoppingBag className="mx-auto h-16 w-16 text-gray-300" />
         <h1 className="mt-4 text-2xl font-bold text-gray-900">
-          سبد خرید خالی است
+          {t("cartEmpty")}
         </h1>
         <p className="mt-2 text-gray-500">
-          بج‌های مینیاتوری را به سبد اضافه کنید
+          {t("cartEmptySub")}
         </p>
         <Link
           href="/shop"
           className="mt-6 inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-gray-800"
         >
-          رفتن به فروشگاه
-          <ArrowRight className="h-4 w-4" />
+          {t("viewShop")}
+          <ArrowIcon className="h-4 w-4" />
         </Link>
       </div>
     );
   }
 
+  const formattedTotal = language === "fa"
+    ? formatPrice(totalPrice())
+    : `${totalPrice().toLocaleString("en-US")} Toman`;
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-black text-gray-900">سبد خرید</h1>
+        <h1 className="text-2xl font-black text-gray-900">{t("cartTitle")}</h1>
         <button
           onClick={clearCart}
           className="text-sm text-red-500 hover:text-red-700"
         >
-          خالی کردن سبد
+          {t("clearCart")}
         </button>
       </div>
 
@@ -53,6 +61,12 @@ export default function CartPage() {
         {items.map((item) => {
           const discount = getBulkDiscount(item.quantity);
           const lineTotal = calculatePrice(item.product.price, item.quantity);
+          const itemPriceFormatted = language === "fa"
+            ? formatPrice(item.product.price)
+            : `${item.product.price.toLocaleString("en-US")} Toman`;
+          const lineTotalFormatted = language === "fa"
+            ? formatPrice(lineTotal)
+            : `${lineTotal.toLocaleString("en-US")} Toman`;
 
           return (
             <div
@@ -74,11 +88,11 @@ export default function CartPage() {
                   {item.product.name}
                 </Link>
                 <p className="text-sm text-gray-400">
-                  {formatPrice(item.product.price)} × {item.quantity}
+                  {itemPriceFormatted} × {item.quantity}
                 </p>
                 {discount > 0 && (
                   <p className="text-xs text-green-600">
-                    {Math.round(discount * 100)}٪ تخفیف عمده
+                    {Math.round(discount * 100)}% {language === "fa" ? "تخفیف عمده" : "bulk discount"}
                   </p>
                 )}
               </div>
@@ -105,7 +119,7 @@ export default function CartPage() {
 
               <div className="text-left">
                 <p className="font-bold text-gray-900">
-                  {formatPrice(lineTotal)}
+                  {lineTotalFormatted}
                 </p>
                 <button
                   onClick={() => removeItem(item.product.id)}
@@ -121,9 +135,9 @@ export default function CartPage() {
 
       <div className="mt-8 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between text-lg">
-          <span className="font-medium text-gray-700">جمع کل</span>
+          <span className="font-medium text-gray-700">{t("totalAmount")}</span>
           <span className="text-2xl font-black text-gray-900">
-            {formatPrice(totalPrice())}
+            {formattedTotal}
           </span>
         </div>
 
@@ -132,17 +146,19 @@ export default function CartPage() {
             onClick={() => setShowCheckout(true)}
             className="mt-4 w-full rounded-xl bg-gray-900 py-3.5 text-sm font-bold text-white shadow-lg shadow-gray-200 transition hover:bg-gray-800 hover:shadow-xl"
           >
-            تکمیل خرید
+            {t("checkoutBtn")}
           </button>
         ) : (
           <div className="mt-6 border-t border-gray-100 pt-6">
-            <h2 className="mb-4 font-bold text-gray-900">اطلاعات سفارش</h2>
+            <h2 className="mb-4 font-bold text-gray-900">{t("recipientInfo")}</h2>
             <CheckoutForm />
           </div>
         )}
 
         <p className="mt-3 text-center text-xs text-gray-400">
-          ارسال رایگان برای سفارش‌های بالای ۵۰۰,۰۰۰ تومان
+          {language === "fa"
+            ? "ارسال رایگان برای سفارش‌های بالای ۵۰۰,۰۰۰ تومان"
+            : "Free shipping on orders over 500,000 Toman"}
         </p>
       </div>
     </div>

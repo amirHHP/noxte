@@ -7,6 +7,7 @@ import { PRODUCTS, BULK_TIERS, formatPrice, calculatePrice } from "@/lib/product
 import { useCartStore } from "@/lib/cart-store";
 import { FloatingDots } from "@/components/FloatingDots";
 import type { Product } from "@/lib/types";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 const TIER_DOTS = ["bg-gray-300", "bg-noxte-green", "bg-noxte-blue", "bg-noxte-red"];
 
@@ -16,6 +17,7 @@ export default function BulkPage() {
     Record<string, number>
   >({});
   const addItem = useCartStore((s) => s.addItem);
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     fetch("/api/products")
@@ -52,6 +54,10 @@ export default function BulkPage() {
     setSelectedProducts({});
   };
 
+  const formattedTotalPrice = language === "fa"
+    ? formatPrice(totalPrice)
+    : `${totalPrice.toLocaleString("en-US")} Toman`;
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="relative mb-8 overflow-hidden text-center">
@@ -60,10 +66,8 @@ export default function BulkPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-900 text-white">
             <Package className="h-8 w-8" />
           </div>
-          <h1 className="text-3xl font-black text-gray-900">خرید عمده</h1>
-          <p className="mt-2 text-gray-500">
-            برای هدیه دادن به کل تیم — تا ۳۰٪ تخفیف
-          </p>
+          <h1 className="text-3xl font-black text-gray-900">{t("bulkTitle")}</h1>
+          <p className="mt-2 text-gray-500">{t("bulkSubtitle")}</p>
         </div>
       </div>
 
@@ -79,11 +83,19 @@ export default function BulkPage() {
             </div>
             <p className="text-2xl font-black text-gray-900">
               {tier.discount > 0
-                ? `${Math.round(tier.discount * 100)}٪`
+                ? `${Math.round(tier.discount * 100)}%`
                 : "—"}
             </p>
             <p className="mt-1 text-sm font-medium text-gray-500">
-              {tier.label}
+              {language === "fa"
+                ? tier.label
+                : tier.min === 1
+                ? "Standard Price"
+                : tier.min === 5
+                ? "5+ items (10% off)"
+                : tier.min === 10
+                ? "10+ items (20% off)"
+                : "20+ items (30% off)"}
             </p>
           </div>
         ))}
@@ -94,16 +106,22 @@ export default function BulkPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50 text-right text-sm text-gray-500">
-              <th className="p-4">محصول</th>
-              <th className="p-4">قیمت واحد</th>
-              <th className="p-4">تعداد</th>
-              <th className="p-4">جمع</th>
+              <th className="p-4">{language === "fa" ? "محصول" : "Product"}</th>
+              <th className="p-4">{language === "fa" ? "قیمت واحد" : "Unit Price"}</th>
+              <th className="p-4">{language === "fa" ? "تعداد" : "Quantity"}</th>
+              <th className="p-4">{language === "fa" ? "جمع" : "Total"}</th>
             </tr>
           </thead>
           <tbody>
             {allProducts.map((product) => {
               const qty = selectedProducts[product.id] || 0;
               const lineTotal = qty > 0 ? calculatePrice(product.price, qty) : 0;
+              const priceFormatted = language === "fa"
+                ? formatPrice(product.price)
+                : `${product.price.toLocaleString("en-US")} Toman`;
+              const lineTotalFormatted = language === "fa"
+                ? formatPrice(lineTotal)
+                : `${lineTotal.toLocaleString("en-US")} Toman`;
 
               return (
                 <tr
@@ -127,7 +145,7 @@ export default function BulkPage() {
                     </div>
                   </td>
                   <td className="p-4 text-sm text-gray-600">
-                    {formatPrice(product.price)}
+                    {priceFormatted}
                   </td>
                   <td className="p-4">
                     <input
@@ -145,7 +163,7 @@ export default function BulkPage() {
                     />
                   </td>
                   <td className="p-4 text-sm font-bold text-gray-900">
-                    {qty > 0 ? formatPrice(lineTotal) : "—"}
+                    {qty > 0 ? lineTotalFormatted : "—"}
                   </td>
                 </tr>
               );
@@ -159,10 +177,12 @@ export default function BulkPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">
-                {totalQty} عدد از {Object.keys(selectedProducts).length} محصول
+                {language === "fa"
+                  ? `${totalQty} عدد از ${Object.keys(selectedProducts).length} محصول`
+                  : `${totalQty} items from ${Object.keys(selectedProducts).length} products`}
               </p>
               <p className="text-2xl font-black text-gray-900">
-                {formatPrice(totalPrice)}
+                {formattedTotalPrice}
               </p>
             </div>
             <button
@@ -170,7 +190,7 @@ export default function BulkPage() {
               className="flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-gray-800"
             >
               <ShoppingBag className="h-5 w-5" />
-              افزودن همه به سبد
+              {language === "fa" ? "افزودن همه به سبد" : "Add All to Cart"}
             </button>
           </div>
         </div>
@@ -178,9 +198,9 @@ export default function BulkPage() {
 
       <div className="mt-8 text-center">
         <p className="text-sm text-gray-500">
-          نیاز به مشاوره دارید؟{" "}
+          {language === "fa" ? "نیاز به مشاوره دارید؟ " : "Need advice? "}
           <Link href="/advisor" className="font-medium text-gray-900 transition hover:text-gray-600">
-            از مشاور AI استفاده کنید
+            {t("navAdvisor")}
           </Link>
         </p>
       </div>

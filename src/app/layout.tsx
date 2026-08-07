@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   title: "Noxte — نقطه یه نشونه‌س",
   description:
     "بج‌های مینیاتوری هدیه همکاران — هر نقطه نشونه‌ای از یک داستانه. خرید بج و عروسک‌های ۱-۲ سانتی‌متری چاپ سه‌بعدی.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

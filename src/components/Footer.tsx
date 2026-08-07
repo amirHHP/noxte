@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 export function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="relative mt-auto border-t border-gray-100 bg-white">
       {/* Decorative dots */}
@@ -15,28 +20,28 @@ export function Footer() {
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex items-center gap-2.5">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-900" />
-            <span className="font-black text-gray-900">Noxte</span>
+            <span className="font-black text-gray-900">{t("brandName")}</span>
             <span className="text-sm text-gray-400">
-              — نقطه یه نشونه‌س
+              — {t("brandSlogan")}
             </span>
           </div>
           <div className="flex gap-4 text-sm text-gray-500">
             <Link href="/shop" className="transition hover:text-gray-900">
-              فروشگاه
+              {t("navShop")}
             </Link>
             <Link href="/advisor" className="transition hover:text-gray-900">
-              مشاور AI
+              {t("navAdvisor")}
             </Link>
             <Link href="/bulk" className="transition hover:text-gray-900">
-              خرید عمده
+              {t("navBulk")}
             </Link>
             <Link href="/track" className="transition hover:text-gray-900">
-              پیگیری سفارش
+              {t("navTrack")}
             </Link>
           </div>
         </div>
         <p className="mt-4 text-center text-xs text-gray-400">
-          بج‌های مینیاتوری چاپ سه‌بعدی — هر نقطه داستانی داره ●
+          {t("footerSlogan")}
         </p>
       </div>
     </footer>
